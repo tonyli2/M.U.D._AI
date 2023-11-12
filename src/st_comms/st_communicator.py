@@ -9,7 +9,7 @@ def main():
     rospy.init_node('score_tracker_publisher', anonymous=True)
 
     # Subscribe to score tracker
-    publisher = rospy.Publisher('/license_plate', String, queue_size=10)
+    publisher = rospy.Publisher('/score_tracker', String, queue_size=10)
 
     # Set a rate to publish messages
     rate = rospy.Rate(1)  # 1 Hz
