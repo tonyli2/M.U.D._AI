@@ -36,11 +36,14 @@ def export_frame(ros_image):
     # Scale down the image to reduce cost
     export_ready = cv2.resize(inverted_img, (256,144))
 
+    # Convert to Gray-scale to reduce dimensionality
+    export_ready = cv2.cvtColor(export_ready, cv2.COLOR_BGR2GRAY)
+
     # Export image as jpeg with specific name indexing
     cv2.imwrite(f'training_imgs/{file_index}.jpeg', export_ready)
 
     # Testing purposes
-    ros_test_img = bridge.cv2_to_imgmsg(export_ready, "bgr8")
+    ros_test_img = bridge.cv2_to_imgmsg(export_ready, "mono8")
 
     # return ros_img for debugging purposes
     return ros_test_img
