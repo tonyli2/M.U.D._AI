@@ -33,11 +33,14 @@ def export_frame(ros_image):
     # Remove residual specks
     cv2.erode(inverted_img, None, iterations=2)
 
+    # Scale down the image to reduce cost
+    export_ready = cv2.resize(inverted_img, (256,144))
+
     # Export image as jpeg with specific name indexing
-    cv2.imwrite(f'training_imgs/{file_index}.jpeg', inverted_img)
+    cv2.imwrite(f'training_imgs/{file_index}.jpeg', export_ready)
 
     # Testing purposes
-    ros_test_img = bridge.cv2_to_imgmsg(inverted_img, "bgr8")
+    ros_test_img = bridge.cv2_to_imgmsg(export_ready, "bgr8")
 
     # return ros_img for debugging purposes
     return ros_test_img
