@@ -1,5 +1,5 @@
 
-# This class has depreciated
+# This class has deprecated
 
 file_index = 0
 

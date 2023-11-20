@@ -5,7 +5,7 @@ from file_indexer import get_file_idx
 json_file_name = 'twist_json_file.json'
 
 
-# Depreciated
+# Deprecated
 def export_twist(cur_twist):
 
     # File naming index
