@@ -1,4 +1,6 @@
 
+# This class has depreciated
+
 file_index = 0
 
 def get_file_idx():

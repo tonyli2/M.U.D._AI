@@ -12,7 +12,7 @@ import numpy as np
 
 # Exporting
 from training_image_processing import export_frame
-from twist_serialization import export_twist
+from twist_serialization import twist_2_dict
 from file_indexer import increment_file_idx
 
 
@@ -84,20 +84,15 @@ class input_reader:
         # Check if Twist and Image data captures the same time
         if(np.abs(twist_time - camera_time) < self.buffer_threshold):
             
-            # Process & export current image
-            debugging_img = export_frame(cur_image)
-            
-            # TODO Add entry to JSON File
-            export_twist(cur_twist)
+            # Convert Twist message to a dictionary so we can use it to name
+            # our image jpeg
+            twist_dict = twist_2_dict(cur_twist)
 
-            # Incremenet labeling index
-            increment_file_idx()
+            # Process & export current image
+            debugging_img = export_frame(cur_image, twist_dict, camera_time)
 
             # Debugging purposes
             self.pub.publish(debugging_img)
-
-
-
 
 
 def reader():

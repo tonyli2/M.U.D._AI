@@ -1,16 +1,34 @@
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
-from file_indexer import get_file_idx
 
 
 # Pre-process sprinkling before sending it off as training data
-def export_frame(ros_image):
+def export_frame(ros_image, twist_dict, camera_time):
     
     bridge = CvBridge()
-    file_index = get_file_idx()
 
+    # Convert Image datatype to numpy array
     img_cv2 = bridge.imgmsg_to_cv2(ros_image, "bgr8")
+
+    # Process image so it is ready to be thrown into the CNN
+    export_ready = process_img(img_cv2)
+
+    # Get name for image based on its corresponding twist message
+    img_name = get_img_name(twist_dict, camera_time)
+
+    # Export image as jpeg with specific name indexing
+    cv2.imwrite(f'training_imgs/{img_name}.jpeg', export_ready)
+
+    # Testing purposes
+    ros_test_img = bridge.cv2_to_imgmsg(export_ready, "mono8")
+
+    # return ros_img for debugging purposes
+    return ros_test_img
+
+
+# Apply filters, and rescale image to be CNN ready
+def process_img(img_cv2):
 
     # Split image up into 3 channels
     red, green, blue = cv2.split(img_cv2)
@@ -39,14 +57,29 @@ def export_frame(ros_image):
     # Convert to Gray-scale to reduce dimensionality
     export_ready = cv2.cvtColor(export_ready, cv2.COLOR_BGR2GRAY)
 
-    # Export image as jpeg with specific name indexing
-    cv2.imwrite(f'training_imgs/{file_index}.jpeg', export_ready)
+    return export_ready
 
-    # Testing purposes
-    ros_test_img = bridge.cv2_to_imgmsg(export_ready, "mono8")
 
-    # return ros_img for debugging purposes
-    return ros_test_img
+# Takes the images corresponding twist command and creates a name for it 
+def get_img_name(twist_dict, current_time):
+
+    # Format. Linear first: "{x}_{y}_{z}_"
+    # Then angular: " linear naming . . .{x}_{y}_{z} "
+
+    linear_x = twist_dict["linear"]["x"]
+    linear_y = twist_dict["linear"]["y"]
+    linear_z = twist_dict["linear"]["z"]
+
+    angular_x = twist_dict["angular"]["x"]
+    angular_y = twist_dict["angular"]["y"]
+    angular_z = twist_dict["angular"]["z"]
+
+    str_current_time = str(current_time)
+
+    format = "T_" + str_current_time + "_L_{0:.1f}_{1:.1f}_{2:.1f}_A_{3:.1f}_{4:.1f}_{5:.1f}"
+
+    return format.format(linear_x, linear_y, linear_z,
+                        angular_x, angular_y, angular_z)
 
 
 # TODO create data augmentation functionality 
