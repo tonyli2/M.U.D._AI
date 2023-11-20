@@ -63,8 +63,10 @@ def process_img(img_cv2):
 # Takes the images corresponding twist command and creates a name for it 
 def get_img_name(twist_dict, current_time):
 
-    # Format. Linear first: "{x}_{y}_{z}_"
-    # Then angular: " linear naming . . .{x}_{y}_{z} "
+    # The format I will be using does not include Linear y, z nor does it 
+    # include Angular x,y since those are not ever used to properly drive the car
+
+    # The formatting will be Time_LX_{Linear X}_AZ_{Angular Z} 
 
     linear_x = twist_dict["linear"]["x"]
     linear_y = twist_dict["linear"]["y"]
@@ -76,10 +78,9 @@ def get_img_name(twist_dict, current_time):
 
     str_current_time = str(current_time)
 
-    format = "T_" + str_current_time + "_L_{0:.1f}_{1:.1f}_{2:.1f}_A_{3:.1f}_{4:.1f}_{5:.1f}"
+    format = "T_" + str_current_time + "_LX_{0:.1f}_AZ_{1:.1f}"
 
-    return format.format(linear_x, linear_y, linear_z,
-                        angular_x, angular_y, angular_z)
+    return format.format(linear_x, angular_z)
 
 
 # TODO create data augmentation functionality 
