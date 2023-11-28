@@ -165,8 +165,7 @@ def main():
     controller = car_controller()
 
     # Startup sequence of controller
-    model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/imit_model_1.2.h5"
-    # controller.model = tf.keras.models.load_model(model_path)
+    model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/imit_model_2.1.h5"
     controller.setup_controller(model_path)
 
 
