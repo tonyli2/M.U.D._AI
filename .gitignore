@@ -1,4 +1,4 @@
-src/imitation_learning/__pycache__/
-src/imitation_learning/training_imgs
-src/imitation_learning/twist_json_file.json
+src/imitation_learning/training/__pycache__/
+src/imitation_learning/training/training_imgs
+src/imitation_learning/training/twist_json_file.json
 
