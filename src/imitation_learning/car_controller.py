@@ -60,8 +60,9 @@ class car_controller():
             # Process image so it is ready to be thrown into the CNN
             model_ready_img = process_img(img_cv2)
 
-            # TODO Debugging the input to model
-            # self.pub_img_debug.publish(model_ready_img)
+            # Debugging the input to model
+            debug_img = bridge.cv2_to_imgmsg(model_ready_img, "mono8")
+            self.pub_img_debug.publish(debug_img)
 
             # We need to reshape before passing into CNN            
             model_ready_img = model_ready_img.reshape((1, 144, 256, 1))
@@ -88,6 +89,12 @@ class car_controller():
         
         # Find predicted move by taking max value in output vector
         pred_idx = np.argmax(model_pred)
+
+        # # Look at how confident model is for this max
+        max_confidence = model_pred[0][pred_idx]
+
+        if max_confidence < 0.8:
+            return
 
         # Go to lookup table to convert from index to Twist Msg
         twist_command = self.moves_dictionary[pred_idx]
