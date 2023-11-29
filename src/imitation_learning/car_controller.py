@@ -165,7 +165,7 @@ def main():
     controller = car_controller()
 
     # Startup sequence of controller
-    model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/imit_model_2.1.h5"
+    model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/imit_model_3.1.h5"
     controller.setup_controller(model_path)
 
 
