@@ -82,5 +82,175 @@ def get_img_name(twist_dict, current_time):
 
     return format.format(linear_x, angular_z)
 
+# def get_length_area(contour):
+#     length = cv2.arcLength(contour, True)
+#     # area = cv2.contourArea(contour)
+#     return length
 
-# TODO create data augmentation functionality 
+# Function to calculate straightness
+def straightness(contour):
+    area = cv2.contourArea(contour)
+    hull = cv2.convexHull(contour)
+    hull_area = cv2.contourArea(hull)
+    if hull_area == 0:
+        return 0
+    return area / hull_area
+
+# Function to get length and straightness
+def get_length_straightness(contour):
+    length = cv2.arcLength(contour, True)
+    straight = straightness(contour)
+    return (length, straight)
+
+# Takes in an np array of grass road and returns the mono8 processed np image
+def process_grass_road(img_cv2):
+
+    # Conver to Hue, Saturation, Value
+    img_hsv = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2HSV)
+    img_hsv_blur = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2HSV)
+    img_gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+
+    # Mask that excludes everything but the white road
+    lower_white = np.array([0, 0, 180])  # Lower value to include faint whites
+    upper_white = np.array([180, 80, 220])
+    white_mask = cv2.inRange(img_hsv_blur, lower_white, upper_white)
+
+    # white_mask = cv2.erode(white_mask, None, iterations=2)
+    white_mask = cv2.dilate(white_mask, None, iterations=2)
+
+    # Get the dimensions of the image
+    height, width = white_mask.shape[:2]
+
+    # Calculate the midpoint of the height
+    midpoint = height // 2
+
+    # Set the top half of the image to black
+    white_mask[0:midpoint, 0:width] = 0
+
+    # Find how many contours it has
+    contours = cv2.findContours(white_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+    # sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+    # If we see two (left and right side of road)
+    if len(sorted_contours) >= 2:
+        
+        # # Calculate the centroid (or any representative point) of each contour
+        # m1 = cv2.moments(sorted_contours[0])
+        # m2 = cv2.moments(sorted_contours[1])
+
+        # if m1["m00"] != 0 and m2["m00"] != 0:  # Check for division by zero
+        #     cx1 = int(m1["m10"] / m1["m00"])
+        #     cx2 = int(m2["m10"] / m2["m00"])
+
+        #     # Determine which contour is on the left and which is on the right
+        #     if cx1 < cx2:
+        #         left_contour = sorted_contours[0]
+        #         right_contour = sorted_contours[1]
+        #     else:
+        #         left_contour = sorted_contours[1]
+        #         right_contour = sorted_contours[0]
+        # else:
+        #     # Handle the case where a contour's area is zero
+        #     pass
+
+        left_contour = sorted_contours[0]
+        right_contour = sorted_contours[1]
+
+        # Make white_mask 3 channels
+        white_mask = cv2.cvtColor(white_mask, cv2.COLOR_GRAY2BGR)
+        # white_mask = cv2.dilate(white_mask, None, iterations=2)
+        # Create blank image to draw contour on
+        blank = np.zeros((height, width, 3), np.uint8)
+
+        # # Draw the contours on the image
+        left = cv2.drawContours(blank, [left_contour], -1, (0, 255, 0), -1)
+        right = cv2.drawContours(blank, [right_contour], -1, (0, 255, 0), -1)
+        # third = cv2.drawContours(blank, [sorted_contours[2]], -1, (0, 255, 0), -1)
+        # fourth = cv2.drawContours(blank, [sorted_contours[3]], -1, (0, 255, 0), -1)
+
+        # result = cv2.bitwise_and(left, right)
+
+    else:
+        print("2 Contours not found")
+        print(len(contours))
+
+
+    return img_gray
+
+def test(img_cv2):
+    gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (19, 19), 0)
+    
+    white = cv2.threshold(blur, 165, 255, cv2.THRESH_BINARY)[1]
+
+    # Get the dimensions of the image
+    height, width = white.shape[:2]
+
+    # Calculate the midpoint of the height
+    midpoint = height // 2
+
+    # Set the top half of the image to black
+    white[0:midpoint, 0:width] = 0
+
+
+    # lower_white = np.array([180, 180, 180], dtype="uint8")  # Lower value to include faint whites
+    # upper_white = np.array([255, 255, 255], dtype="uint8")
+    # white = cv2.inRange(img_cv2, lower_white, upper_white)
+
+    white = cv2.erode(white, None, iterations=1)
+
+    contours = cv2.findContours(white, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+    one = sorted_contours[0]
+    two = sorted_contours[1]
+    three = sorted_contours[2]
+
+    # Make white_mask 3 channels
+    white = cv2.cvtColor(white, cv2.COLOR_GRAY2BGR)
+    # white_mask = cv2.dilate(white_mask, None, iterations=2)
+    # Create blank image to draw contour on
+    blank = np.zeros((height, width, 3), np.uint8)
+
+    # # Draw the contours on the image
+    left = cv2.drawContours(blank, [one], -1, (0, 255, 0), -1)
+    right = cv2.drawContours(blank, [two], -1, (0, 255, 0), -1)
+    # third = cv2.drawContours(blank, [three], -1, (0, 255, 0), -1)
+    
+    # Find the extreme points for each contour
+    left_extreme, _ = find_extreme_points(one, height, width)
+    _, right_extreme = find_extreme_points(two, height, width)
+
+    start_row = int(3 * height / 4)
+
+    # Fill the area between contours in the bottom quarter
+    for y in range(start_row, height):
+        x_left = left_extreme[y]
+        x_right = right_extreme[y]
+        if x_right > x_left:  # Ensure there is space to fill
+            print('test')
+            blank[y, x_left:x_right] = (0, 255, 0) 
+
+
+    return blank
+
+
+
+# Function to find extreme left and right points on each row
+def find_extreme_points(contour, height, width):
+    # Initialize arrays to store the extreme points
+    left_points = np.full(height, width, np.int32)
+    right_points = np.zeros(height, np.int32)
+
+    # Go through all points in the contour
+    for point in contour:
+        x, y = point[0]
+        if x < left_points[y]:
+            left_points[y] = x
+        if x > right_points[y]:
+            right_points[y] = x
+    
+    return left_points, right_points
