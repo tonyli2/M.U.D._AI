@@ -24,12 +24,19 @@ class car_controller():
         # Subscribe camera topic
         self.sub_cam = rospy.Subscriber('/R1/pi_camera/image_raw', Image, self.camera_callback)
 
-        # Publish to 
+        # Publish to the command velocity
         self.pub_twist = rospy.Publisher('/R1/cmd_vel', Twist, queue_size=5)
 
         # Publishers for debugging model predicted commands
         self.pub_twist_debug = rospy.Publisher('/twist_debug', String, queue_size=5)
         self.pub_img_debug = rospy.Publisher('/img_debug', Image, queue_size=5)
+        self.pub_pedestrian_debug = rospy.Publisher('/R1/pi_camera/pedestrian', Image, queue_size=5)
+
+        # Subscribe to the pedestrian signal command topic
+        self.pedestrian_signal_cmd = rospy.Subscriber('/pedestrian_signal_cmd', String, self.pedestrian_callback)
+
+        # Flag indicating if we are waiting for pedestrian to cross the road
+        self.wait4pedestrian = False
 
         # Dictionary that maps Model outputs to real Twist messages
         self.moves_dictionary = None
@@ -49,6 +56,15 @@ class car_controller():
 
         # Update time
         self.update_cur_time()
+        
+        # Subscribe to a topic
+        # Topic returns a boolean (Stirng)
+        # If topic returns true the stop otherwise drive
+        if self.wait4pedestrian == True:
+            # Publish the stop command to find wait for pedestrian crossing road
+            twist_command = self.moves_dictionary[4]
+            self.pub_twist.publish(twist_command)
+            return
 
         # Only input commands once ever 100 ms
         if self.cur_time - self.last_cmd_time > self.input_period:
@@ -58,7 +74,7 @@ class car_controller():
             img_cv2 = bridge.imgmsg_to_cv2(car_view_img, "bgr8")
 
             # Process image so it is ready to be thrown into the CNN
-            mask_number = 1
+            mask_number = 0
             model_ready_img = process_img(img_cv2, mask_number)
 
             # Debugging the input to model
@@ -74,6 +90,16 @@ class car_controller():
 
             # Change last command time to cur_time
             self.last_cmd_time = self.cur_time
+    
+    # Set the pedestrian flag to indicate if robot should wait or go
+    def pedestrian_callback(self, msg):
+        print("Pedestrian callback received:", msg.data)  # Debugging print statement
+        if msg.data == 'True':
+            self.wait4pedestrian = True
+            print("Waiting for pedestrian...")  # More debugging
+        else:
+            self.wait4pedestrian = False
+            print("No pedestrian, continuing...")  # More debugging
 
     # Update time
     def update_cur_time(self):
@@ -160,7 +186,7 @@ def main():
     # Startup sequence of controller
     road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/imit_model_3.1.h5"
     grass_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/grass_model/grass_model_2.0.h5"
-    controller.setup_controller(grass_model_path)
+    controller.setup_controller(road_model_path)
 
     try:
         rospy.spin()
