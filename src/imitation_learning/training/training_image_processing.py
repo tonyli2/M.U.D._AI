@@ -36,7 +36,7 @@ def process_img(img_cv2, mask_number):
     mask_offroad = 2
 
     if mask_number == mask_road:
-        return process_road_img
+        return process_road_img(img_cv2)
     
     elif mask_number == mask_grass:
         return process_grass_road(img_cv2)
