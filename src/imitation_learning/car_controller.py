@@ -58,7 +58,8 @@ class car_controller():
             img_cv2 = bridge.imgmsg_to_cv2(car_view_img, "bgr8")
 
             # Process image so it is ready to be thrown into the CNN
-            model_ready_img = process_img(img_cv2)
+            mask_number = 1
+            model_ready_img = process_img(img_cv2, mask_number)
 
             # Debugging the input to model
             debug_img = bridge.cv2_to_imgmsg(model_ready_img, "mono8")
@@ -101,14 +102,6 @@ class car_controller():
 
         # Publish to robot
         self.pub_twist.publish(twist_command)
-
-        # Debugging the output of model 
-        self.pub_twist_debug.publish("________________")
-        self.pub_twist_debug.publish("Predicted Vector: ")
-        self.pub_twist_debug.publish(str(model_pred))
-        self.pub_twist_debug.publish("Equivalent Twist CMD")
-        self.pub_twist_debug.publish(str(twist_command))
-        self.pub_twist_debug.publish("________________")
 
 
     # Called at start to populate class variables
@@ -165,9 +158,9 @@ def main():
     controller = car_controller()
 
     # Startup sequence of controller
-    model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/imit_model_3.1.h5"
-    controller.setup_controller(model_path)
-
+    road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/imit_model_3.1.h5"
+    grass_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/grass_model/grass_model_2.0.h5"
+    controller.setup_controller(grass_model_path)
 
     try:
         rospy.spin()

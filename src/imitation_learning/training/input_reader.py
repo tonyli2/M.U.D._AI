@@ -92,7 +92,8 @@ class input_reader:
             twist_dict = twist_2_dict(cur_twist)
 
             # Process & export current image
-            debugging_img = export_frame(cur_image, twist_dict, camera_time)
+            mask_number = 1 # 1 is for grass_road
+            debugging_img = export_frame(cur_image, twist_dict, camera_time, mask_number)
 
             # Debugging purposes
             self.pub.publish(debugging_img)

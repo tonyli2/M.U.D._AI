@@ -4,7 +4,7 @@ import numpy as np
 
 
 # Pre-process sprinkling before sending it off as training data
-def export_frame(ros_image, twist_dict, camera_time):
+def export_frame(ros_image, twist_dict, camera_time, mask_number):
     
     bridge = CvBridge()
 
@@ -12,7 +12,7 @@ def export_frame(ros_image, twist_dict, camera_time):
     img_cv2 = bridge.imgmsg_to_cv2(ros_image, "bgr8")
 
     # Process image so it is ready to be thrown into the CNN
-    export_ready = process_img(img_cv2)
+    export_ready = process_img(img_cv2, mask_number)
 
     # Get name for image based on its corresponding twist message
     img_name = get_img_name(twist_dict, camera_time)
@@ -28,7 +28,22 @@ def export_frame(ros_image, twist_dict, camera_time):
 
 
 # Apply filters, and rescale image to be CNN ready
-def process_img(img_cv2):
+def process_img(img_cv2, mask_number):
+
+    # Three different masks for 3 parts of the environment
+    mask_road = 0
+    mask_grass = 1
+    mask_offroad = 2
+
+    if mask_number == mask_road:
+        return process_road_img
+    
+    elif mask_number == mask_grass:
+        return process_grass_road(img_cv2)
+
+
+# Processes the image so that the road is highlighted
+def process_road_img(img_cv2):
 
     # Split image up into 3 channels
     red, green, blue = cv2.split(img_cv2)
@@ -83,4 +98,64 @@ def get_img_name(twist_dict, current_time):
     return format.format(linear_x, angular_z)
 
 
-# TODO create data augmentation functionality 
+def process_grass_road(img_cv2):
+
+    # Change image to Gray and apply blur
+    gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (19, 19), 0)
+    
+    # Get image with white highlighted
+    white = cv2.threshold(blur, 165, 255, cv2.THRESH_BINARY)[1]
+    white = cv2.erode(white, None, iterations=1)
+
+    # # Get the dimensions of the image
+    height, width = white.shape[:2]
+
+    # Remove the sky from the contours by making all the top pixels dark
+    white[:height//2,:] = 0
+
+    # Find all contours in the image and sort them by area
+    contours = cv2.findContours(white, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+    # Create the blank image that we will draw on
+    blank = np.zeros((height, width, 3), np.uint8)
+
+    # Get the 5 largest contours on the image
+    largest_contours = sorted_contours[:5]
+
+    # Get bounding rectangles for the 5 largest contours
+    pairings = [(contour, cv2.boundingRect(contour)) for contour in largest_contours]
+
+    # Sort these rectangles by their top edge's proximity to the middle row
+    # Rect objects return x, y, w, h so rect[1][1] returns the rect of the pairing 
+    # and its top most edge of the rect
+    pairings.sort(key=lambda pair: abs(pair[1][1] - (height//2)))
+    valid_pairings = list()
+    for i in range(len(pairings)):
+        
+        # Get the specified contour and its correspondign box from each pairing
+        contour = pairings[i][0]
+        contour_box = pairings[i][1]
+        x, y, w, h = contour_box
+        
+        # Look at each box in the pairings, and only keep the ones that
+        # have at least one of their sides on the edge of the image 
+        # edges are x = 0 (left of frame), y = height (bottom), and x = width (right)
+        if(x == 0 or (x + w) == width or (y + h) == height):
+            valid_pairings.append(pairings[i])
+    
+    # Find which remaining contours are closest to the midline
+    valid_pairings.sort(key=lambda pair: abs(pair[1][1] - (height//2)))
+
+    # Choose to only draw the top 2 (corresponds hopefully to left and right road mark)
+    for contour, contour_box in valid_pairings[:2]:
+        x, y, w, h = contour_box
+        cv2.drawContours(blank, [contour], -1, (255,255,255), -1)
+        # cv2.rectangle(blank, (x, y), (x + w, y + h), (0, 0, 255), 2) Debugging line
+
+    # Simplifying the data that the CNN will train on
+    export_ready = cv2.resize(blank, (256,144))
+    export_ready = cv2.cvtColor(export_ready, cv2.COLOR_BGR2GRAY)
+
+    return export_ready
