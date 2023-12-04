@@ -14,8 +14,14 @@ import tensorflow as tf
 import numpy as np
 
 # Image processing
-from training.training_image_processing import process_img
 from cv_bridge import CvBridge, CvBridgeError
+import sys
+
+# To import image_processing functions
+sys.path.insert(1, '/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/training')
+
+from training_image_processing import process_img
+
 
 class car_controller():
 
