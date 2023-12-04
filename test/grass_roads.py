@@ -10,6 +10,7 @@ from std_msgs.msg import String
 from training.training_image_processing import process_grass_road
 from cv_bridge import CvBridge, CvBridgeError
 
+# Class used to debug the thresholding for various parts of the off_roading and grass_road sections
 class grass_road():
 
     def __init__(self) -> None:

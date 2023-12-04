@@ -5,15 +5,15 @@ import cv2 as cv
 import time
 
 # Enter path to image you want to threshold on
-img = cv.imread('/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/training/training_imgs/T_1701476085862_LX_0.0_AZ_0.0.jpeg',cv.IMREAD_COLOR)
+img = cv.imread('/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/training/training_imgs/baby_yoda_cactus.png',cv.IMREAD_COLOR)
 img = cv.medianBlur(img,5)
 
-ub = 130
-ug = 255
-ur = 255
-lb = 110
-lg = 50
-lr = 50
+ub = 50
+ug = 42
+ur = 60
+lb = 0
+lg = 0
+lr = 41
 lower_bgr = np.array([lb,lg,lr])
 upper_bgr = np.array([ub,ug,ur])
 
@@ -22,7 +22,7 @@ mask = cv.inRange(img, lower_bgr, upper_bgr)
 result = cv.bitwise_and(img, img, mask=mask)
 
 window_name = "BGR Calibrator"
-cv.namedWindow(window_name)
+cv.namedWindow(window_name, cv.WINDOW_NORMAL)
 
 def nothing(x):
     print("Trackbar value: " + str(x))

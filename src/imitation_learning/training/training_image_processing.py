@@ -40,6 +40,10 @@ def process_img(img_cv2, mask_number):
     
     elif mask_number == mask_grass:
         return process_grass_road(img_cv2)
+    
+    # elif mask_number == mask_offroad:
+    #     return None
+    #     # return process_off_road(img_cv2)
 
 
 # Processes the image so that the road is highlighted
@@ -73,29 +77,6 @@ def process_road_img(img_cv2):
     export_ready = cv2.cvtColor(export_ready, cv2.COLOR_BGR2GRAY)
 
     return export_ready
-
-
-# Takes the images corresponding twist command and creates a name for it 
-def get_img_name(twist_dict, current_time):
-
-    # The format I will be using does not include Linear y, z nor does it 
-    # include Angular x,y since those are not ever used to properly drive the car
-
-    # The formatting will be Time_LX_{Linear X}_AZ_{Angular Z} 
-
-    linear_x = twist_dict["linear"]["x"]
-    linear_y = twist_dict["linear"]["y"]
-    linear_z = twist_dict["linear"]["z"]
-
-    angular_x = twist_dict["angular"]["x"]
-    angular_y = twist_dict["angular"]["y"]
-    angular_z = twist_dict["angular"]["z"]
-
-    str_current_time = str(current_time)
-
-    format = "T_" + str_current_time + "_LX_{0:.1f}_AZ_{1:.1f}"
-
-    return format.format(linear_x, angular_z)
 
 
 def process_grass_road(img_cv2):
@@ -159,3 +140,88 @@ def process_grass_road(img_cv2):
     export_ready = cv2.cvtColor(export_ready, cv2.COLOR_BGR2GRAY)
 
     return export_ready
+
+
+
+# Finds the pink strip in the image inputted
+def find_pink(img_cv2):
+
+    # Experimentally determined optimal threshold for pink strip
+    upper_blue = 255
+    upper_green = 0
+    upper_red = 255
+
+    lower_blue = 0
+    lower_green = 0
+    lower_red =  0
+
+    lower_thresh = np.array([lower_blue, lower_green, lower_red])
+    upper_thresh = np.array([upper_blue, upper_green, upper_red])
+
+    export_ready = cv2.inRange(img_cv2, lower_thresh, upper_thresh)
+    export_ready = cv2.dilate(export_ready, None, iterations=1)   
+
+    return export_ready
+
+# Finds and draws the largest contour while thresholding for baby yoda
+def find_yoda(img_cv2):
+    # Experimentally determined optimal thresholds for cactus
+    upper_blue = 50
+    upper_green = 42
+    upper_red = 52
+
+    lower_blue = 0
+    lower_green = 0
+    lower_red =  43
+
+    lower_thresh = np.array([lower_blue, lower_green, lower_red])
+    upper_thresh = np.array([upper_blue, upper_green, upper_red])
+
+    yoda_img = cv2.inRange(img_cv2, lower_thresh, upper_thresh)
+    yoda_img = cv2.dilate(yoda_img, None, iterations=1)
+
+    height, width = yoda_img.shape[:2]
+
+    contours = cv2.findContours(yoda_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+    # baby yoda has about 2000 units area, so only draw baby yoda on the export frame
+    export_ready = np.zeros((height, width, 3), np.uint8)
+
+    if len(sorted_contours) == 0:
+        return export_ready, None
+    else:
+        yoda_contour = sorted_contours[0]
+
+    # If the largest contour is not yoda it will not have a large area
+    if cv2.contourArea(yoda_contour) > 1500: # Then this is baby yoda
+        cv2.drawContours(export_ready, [yoda_contour], -1, (255,255,255), -1)
+
+    else: # Return no contour if its not baby yoda
+        yoda_contour = None
+    
+    export_ready = cv2.cvtColor(export_ready, cv2.COLOR_BGR2GRAY)
+
+    return export_ready, yoda_contour
+
+# Takes the images corresponding twist command and creates a name for it 
+def get_img_name(twist_dict, current_time):
+
+    # The format I will be using does not include Linear y, z nor does it 
+    # include Angular x,y since those are not ever used to properly drive the car
+
+    # The formatting will be Time_LX_{Linear X}_AZ_{Angular Z} 
+
+    linear_x = twist_dict["linear"]["x"]
+    linear_y = twist_dict["linear"]["y"]
+    linear_z = twist_dict["linear"]["z"]
+
+    angular_x = twist_dict["angular"]["x"]
+    angular_y = twist_dict["angular"]["y"]
+    angular_z = twist_dict["angular"]["z"]
+
+    str_current_time = str(current_time)
+
+    format = "T_" + str_current_time + "_LX_{0:.1f}_AZ_{1:.1f}"
+
+    return format.format(linear_x, angular_z)
