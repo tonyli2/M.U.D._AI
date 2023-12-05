@@ -115,6 +115,9 @@ class car_controller():
                     print('Driving on Baby Yoda PID')
                     self.start_PID.publish('True')
 
+                    # Stop the car so as not to move past the 2nd pink stripe
+                    self.pub_twist.publish(Twist())
+
             # Change last command time to cur_time
             self.last_cmd_time = self.cur_time
 
