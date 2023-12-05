@@ -64,7 +64,7 @@ class car_controller():
             img_cv2 = bridge.imgmsg_to_cv2(car_view_img, "bgr8")
 
             # Process image so it is ready to be thrown into the CNN
-            mask_number = 1
+            mask_number = 2
             model_ready_img = process_img(img_cv2, mask_number)
 
             # Debugging the input to model
@@ -166,8 +166,8 @@ def main():
     # Startup sequence of controller
     road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/road_models/imit_model_3.1.h5"
     grass_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/grass_models/grass_model_2.0.h5"
-    # off_road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/off_road_models/off_road_model_1.0.h5"
-    controller.setup_controller(grass_model_path)
+    off_road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/off_road_models/off_road_model_2.0.h5"
+    controller.setup_controller(off_road_model_path)
 
     try:
         rospy.spin()

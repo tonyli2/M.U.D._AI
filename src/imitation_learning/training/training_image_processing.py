@@ -41,9 +41,8 @@ def process_img(img_cv2, mask_number):
     elif mask_number == mask_grass:
         return process_grass_road(img_cv2)
     
-    # elif mask_number == mask_offroad:
-    #     return None
-    #     # return process_off_road(img_cv2)
+    elif mask_number == mask_offroad:
+        return process_off_road(img_cv2)
 
 
 # Processes the image so that the road is highlighted
@@ -142,6 +141,20 @@ def process_grass_road(img_cv2):
     return export_ready
 
 
+# # Processes the image so we can imitation learn on the mountain road
+def process_off_road(img_cv2):
+    
+    img_cv2 = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+
+    # Turn all pixels in the top half of the image to black
+    height, width = img_cv2.shape[:2]
+
+    top_third = int(height * (1/3))
+
+    img_cv2[:top_third,:] = 0
+    img_cv2 = cv2.resize(img_cv2, (256,144))
+
+    return img_cv2
 
 # Finds the pink strip in the image inputted
 def find_pink(img_cv2):

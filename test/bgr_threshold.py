@@ -5,15 +5,15 @@ import cv2 as cv
 import time
 
 # Enter path to image you want to threshold on
-img = cv.imread('/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/training/training_imgs/baby_yoda_cactus.png',cv.IMREAD_COLOR)
+img = cv.imread('/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/training/training_imgs/mountain5.png',cv.IMREAD_COLOR)
 img = cv.medianBlur(img,5)
 
-ub = 50
-ug = 42
-ur = 60
-lb = 0
-lg = 0
-lr = 41
+ub = 255
+ug = 255
+ur = 255
+lb = 134
+lg = 134
+lr = 134
 lower_bgr = np.array([lb,lg,lr])
 upper_bgr = np.array([ub,ug,ur])
 
