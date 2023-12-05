@@ -21,7 +21,7 @@ class road_transition():
         # Contour area thresholds
         # First one is bigger than second one since we want to stop slightly earilier at second pink stripe
         self.first_area_threshold = 30000
-        self.second_area_threshold = 20000
+        self.second_area_threshold = 30000
         # Flag to indicate if we already see the first pink stripe
         self.seen_first_pink = False
         # Time at which the robot sees the first pink stripe

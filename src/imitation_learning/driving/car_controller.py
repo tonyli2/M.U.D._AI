@@ -36,6 +36,8 @@ class car_controller():
 
         # Publish to 
         self.pub_twist = rospy.Publisher('/R1/cmd_vel', Twist, queue_size=5)
+        # Publish to start PID command
+        self.start_PID = rospy.Publisher('/start_PID', String, queue_size=5)
 
         # Publishers for debugging model predicted commands
         self.pub_twist_debug = rospy.Publisher('/twist_debug', String, queue_size=5)
@@ -104,9 +106,14 @@ class car_controller():
                 if not self.seen_first_pink:
                     print('Driving on road')
                     self.road_drive(model_ready_img)
-                else:
+                    self.start_PID.publish('False')
+                elif not self.seen_second_pink:
                     print('Driving on grass')
                     self.grass_drive(model_ready_img)
+                    self.start_PID.publish('False')
+                elif self.seen_second_pink:
+                    print('Driving on Baby Yoda PID')
+                    self.start_PID.publish('True')
 
             # Change last command time to cur_time
             self.last_cmd_time = self.cur_time

@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
+from std_msgs.msg import String
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
 import cv2
@@ -20,6 +21,7 @@ class baby_yoda_follower:
 
         self.pub_twist = rospy.Publisher('/R1/cmd_vel', Twist, queue_size=5)
         self.sub_cam = rospy.Subscriber('/R1/pi_camera/image_raw', Image, self.camera_callback)
+        self.start_PID = rospy.Subscriber('start_PID', String, self.start_PID_callback)
         self.pub_debug = rospy.Publisher('/debugging_topic', Image, queue_size=5)
         self.bridge = CvBridge()
         self.ready_2_start = False
@@ -54,46 +56,53 @@ class baby_yoda_follower:
 
         self.prev_road_center = 0
 
+        # Flag to indicate if we start PID
+        self.start_PID_flag = False
+    
+    def start_PID_callback(self, msg):
+        if msg.data == 'True':
+            self.start_PID_flag = True
+
     def camera_callback(self,data):
-
-        try:
-            
-            cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-            frame_height, frame_width, channels  = cv_image.shape
-            # self.update_cur_time()
-            # if not self.pid_is_ready:
-            #     print("Waiting on yoda to get in position")
-            #     self.is_yoda_in_pos(cv_image)
-            # else: # If so, PID on it
-            #     print("PID on yoda")
-            #     self.yoda_pid(cv_image)
-            # return
-            # TODO uncomment once done with 90 degree turn cactus
-            if not self.ready_2_start and not self.done_start:
-                print("Before Start")
-                self.start_sequence(cv_image, frame_width)
-
-            elif self.ready_2_start and not self.done_start:
-                print("Ready to start")
-                # Drive forward and over the pink strip
-                self.drive_toward_pink(cv_image, frame_height)
+        if self.start_PID_flag:
+            try:
                 
-            elif self.ready_2_start and self.done_start:
-                # Update time
-                self.update_cur_time()
-                # Is Yoda in position?
-                if not self.pid_is_ready:
-                    print("Waiting on yoda to get in position")
-                    self.is_yoda_in_pos(cv_image)
-                else: # If so, PID on it
-                    print("PID on yoda")
-                    self.yoda_pid(cv_image)
-            else:
-                print("something went wrong this is the else condition")
+                cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+                frame_height, frame_width, channels  = cv_image.shape
+                # self.update_cur_time()
+                # if not self.pid_is_ready:
+                #     print("Waiting on yoda to get in position")
+                #     self.is_yoda_in_pos(cv_image)
+                # else: # If so, PID on it
+                #     print("PID on yoda")
+                #     self.yoda_pid(cv_image)
+                # return
+                # TODO uncomment once done with 90 degree turn cactus
+                if not self.ready_2_start and not self.done_start:
+                    print("Before Start")
+                    self.start_sequence(cv_image, frame_width)
 
-            # self.pub.publish(movement)
-        except CvBridgeError as e:
-            print(e)
+                elif self.ready_2_start and not self.done_start:
+                    print("Ready to start")
+                    # Drive forward and over the pink strip
+                    self.drive_toward_pink(cv_image, frame_height)
+                    
+                elif self.ready_2_start and self.done_start:
+                    # Update time
+                    self.update_cur_time()
+                    # Is Yoda in position?
+                    if not self.pid_is_ready:
+                        print("Waiting on yoda to get in position")
+                        self.is_yoda_in_pos(cv_image)
+                    else: # If so, PID on it
+                        print("PID on yoda")
+                        self.yoda_pid(cv_image)
+                else:
+                    print("something went wrong this is the else condition")
+
+                # self.pub.publish(movement)
+            except CvBridgeError as e:
+                print(e)
     
     # Update time
     def update_cur_time(self):
