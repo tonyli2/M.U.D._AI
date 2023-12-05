@@ -30,6 +30,9 @@ class car_controller():
         # Subscribe camera topic
         self.sub_cam = rospy.Subscriber('/R1/pi_camera/image_raw', Image, self.camera_callback)
 
+        # Subscribe to the pink flag topic
+        self.pink_flag = rospy.Subscriber('/pink_detector', String, self.pink_callback)
+
         # Publish to 
         self.pub_twist = rospy.Publisher('/R1/cmd_vel', Twist, queue_size=5)
 
@@ -41,7 +44,8 @@ class car_controller():
         self.moves_dictionary = None
 
         # CNN to drive car
-        self.model = None
+        self.road_model = None
+        self.grass_model = None
 
         # TODO change from real time to sim time 
 
@@ -49,6 +53,15 @@ class car_controller():
         self.cur_time = None
         self.last_cmd_time = 0
         self.input_period = 100 # 100 millisecs
+
+        # Pink line flag
+        self.seen_pink = False
+    
+    # Change the state of the pink flag
+    def pink_callback(self, msg):
+        # Set the pink flag to True if the pink stripe is big enough
+        if msg.data == 'True':
+            self.seen_pink = False
 
     # Takes in a camera image and prepares it to be sent to CNN
     def camera_callback(self, car_view_img):
@@ -64,7 +77,11 @@ class car_controller():
             img_cv2 = bridge.imgmsg_to_cv2(car_view_img, "bgr8")
 
             # Process image so it is ready to be thrown into the CNN
-            mask_number = 1
+            if not self.seen_pink:
+                mask_number = 0
+            else:
+                mask_number = 1
+            # mask_number = 1
             model_ready_img = process_img(img_cv2, mask_number)
 
             # Debugging the input to model
@@ -75,8 +92,13 @@ class car_controller():
             model_ready_img = model_ready_img.reshape((1, 144, 256, 1))
 
             # Drive! (But only if the model is ready)
-            if self.model != None:
-                self.drive(model_ready_img)
+            if self.road_model != None and self.grass_model != None:
+                if not self.seen_pink:
+                    print('Driving on road')
+                    self.road_drive(model_ready_img)
+                else:
+                    print('Driving on grass')
+                    self.grass_drive(model_ready_img)
 
             # Change last command time to cur_time
             self.last_cmd_time = self.cur_time
@@ -86,13 +108,36 @@ class car_controller():
         self.cur_time = int(time.time() * 1000)
 
 
-    # Given the car's perspective through the camera, navigate the robot
-    def drive(self, model_input):
+    # Given the car's perspective through the camera, navigate the robot on road condition
+    def road_drive(self, model_input):
         
         # print(model_input.shape)
 
         # Get output from CNN, will be a 1D np vector
-        model_pred = self.model.predict(model_input)
+        model_pred = self.road_model.predict(model_input)
+        
+        # Find predicted move by taking max value in output vector
+        pred_idx = np.argmax(model_pred)
+
+        # # Look at how confident model is for this max
+        max_confidence = model_pred[0][pred_idx]
+
+        if max_confidence < 0.8:
+            return
+
+        # Go to lookup table to convert from index to Twist Msg
+        twist_command = self.moves_dictionary[pred_idx]
+
+        # Publish to robot
+        self.pub_twist.publish(twist_command)
+    
+    # Given the car's perspective through the camera, navigate the robot on grass condition
+    def grass_drive(self, model_input):
+        
+        # print(model_input.shape)
+
+        # Get output from CNN, will be a 1D np vector
+        model_pred = self.grass_model.predict(model_input)
         
         # Find predicted move by taking max value in output vector
         pred_idx = np.argmax(model_pred)
@@ -111,12 +156,13 @@ class car_controller():
 
 
     # Called at start to populate class variables
-    def setup_controller(self, model_path):
+    def setup_controller(self, road_model_path, grass_model_path):
 
         # Load the desired version of the CNN
-        self.model = tf.keras.models.load_model(model_path)
+        self.road_model = tf.keras.models.load_model(road_model_path)
+        self.grass_model = tf.keras.models.load_model(grass_model_path)
 
-        while self.model == None:
+        while self.road_model == None or self.grass_model == None:
             print("Waiting for model to load . . .")
             continue
         
@@ -167,7 +213,7 @@ def main():
     road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/road_models/imit_model_3.1.h5"
     grass_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/grass_models/grass_model_2.0.h5"
     # off_road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/off_road_models/off_road_model_1.0.h5"
-    controller.setup_controller(grass_model_path)
+    controller.setup_controller(road_model_path, grass_model_path)
 
     try:
         rospy.spin()
