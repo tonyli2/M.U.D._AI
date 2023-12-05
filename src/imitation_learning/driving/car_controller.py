@@ -31,7 +31,8 @@ class car_controller():
         self.sub_cam = rospy.Subscriber('/R1/pi_camera/image_raw', Image, self.camera_callback)
 
         # Subscribe to the pink flag topic
-        self.pink_flag = rospy.Subscriber('/pink_detector', String, self.pink_callback)
+        self.first_pink_flag = rospy.Subscriber('/first_pink_detector', String, self.first_pink_callback)
+        self.second_pink_flag = rospy.Subscriber('/second_pink_detector', String, self.second_pink_callback)
 
         # Publish to 
         self.pub_twist = rospy.Publisher('/R1/cmd_vel', Twist, queue_size=5)
@@ -54,14 +55,21 @@ class car_controller():
         self.last_cmd_time = 0
         self.input_period = 100 # 100 millisecs
 
-        # Pink line flag
-        self.seen_pink = False
+        # Pink line flags
+        self.seen_first_pink = False
+        self.seen_second_pink = False
     
-    # Change the state of the pink flag
-    def pink_callback(self, msg):
+    # Change the state of the first pink flag
+    def first_pink_callback(self, msg):
         # Set the pink flag to True if the pink stripe is big enough
         if msg.data == 'True':
-            self.seen_pink = True
+            self.seen_first_pink = True
+    
+    # Change the state of the second pink flag
+    def second_pink_callback(self, msg):
+        # Set the pink flag to True if the pink stripe is big enough
+        if msg.data == 'True':
+            self.seen_second_pink = True
 
     # Takes in a camera image and prepares it to be sent to CNN
     def camera_callback(self, car_view_img):
@@ -77,7 +85,7 @@ class car_controller():
             img_cv2 = bridge.imgmsg_to_cv2(car_view_img, "bgr8")
 
             # Process image so it is ready to be thrown into the CNN
-            if not self.seen_pink:
+            if not self.seen_first_pink:
                 mask_number = 0
             else:
                 mask_number = 1
@@ -93,7 +101,7 @@ class car_controller():
 
             # Drive! (But only if the model is ready)
             if self.road_model != None and self.grass_model != None:
-                if not self.seen_pink:
+                if not self.seen_first_pink:
                     print('Driving on road')
                     self.road_drive(model_ready_img)
                 else:
