@@ -61,7 +61,7 @@ class car_controller():
     def pink_callback(self, msg):
         # Set the pink flag to True if the pink stripe is big enough
         if msg.data == 'True':
-            self.seen_pink = False
+            self.seen_pink = True
 
     # Takes in a camera image and prepares it to be sent to CNN
     def camera_callback(self, car_view_img):

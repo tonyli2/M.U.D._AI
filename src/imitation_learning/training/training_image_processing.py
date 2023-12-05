@@ -148,10 +148,10 @@ def find_pink(img_cv2):
 
     # Experimentally determined optimal threshold for pink strip
     upper_blue = 255
-    upper_green = 0
+    upper_green = 3
     upper_red = 255
 
-    lower_blue = 0
+    lower_blue = 250
     lower_green = 0
     lower_red =  0
 
