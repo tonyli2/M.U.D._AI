@@ -33,6 +33,7 @@ class car_controller():
         # Subscribe to the pink flag topic
         self.first_pink_flag = rospy.Subscriber('/first_pink_detector', String, self.first_pink_callback)
         self.second_pink_flag = rospy.Subscriber('/second_pink_detector', String, self.second_pink_callback)
+        self.parked_car_flag = rospy.Subscriber('/parked_car_detector', String, self.parked_car_callback)
 
         # Publish to 
         self.pub_twist = rospy.Publisher('/R1/cmd_vel', Twist, queue_size=5)
@@ -57,21 +58,28 @@ class car_controller():
         self.last_cmd_time = 0
         self.input_period = 100 # 100 millisecs
 
-        # Pink line flags
+        # Road transition flags
         self.seen_first_pink = False
         self.seen_second_pink = False
+        self.seen_parked_car = False
     
     # Change the state of the first pink flag
     def first_pink_callback(self, msg):
-        # Set the pink flag to True if the pink stripe is big enough
+        # Set the first pink flag to True if the pink stripe is big enough
         if msg.data == 'True':
             self.seen_first_pink = True
     
     # Change the state of the second pink flag
     def second_pink_callback(self, msg):
-        # Set the pink flag to True if the pink stripe is big enough
+        # Set the second pink flag to True if the pink stripe is big enough
         if msg.data == 'True':
             self.seen_second_pink = True
+    
+    # Change the state of the parked car flag
+    def parked_car_callback(self, msg):
+        # Set the parked car flag to True if the car is close enough
+        if msg.data == 'True':
+            self.seen_parked_car = True
 
     # Takes in a camera image and prepares it to be sent to CNN
     def camera_callback(self, car_view_img):
