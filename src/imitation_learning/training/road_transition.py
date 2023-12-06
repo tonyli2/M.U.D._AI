@@ -18,12 +18,14 @@ class road_transition():
         self.see_first_pink = rospy.Publisher('/first_pink_detector', String, queue_size=5)
         self.see_second_pink = rospy.Publisher('/second_pink_detector', String, queue_size=5)
         self.see_parked_car = rospy.Publisher('/parked_car_detector', String, queue_size=5)
+        self.pub_img_debug = rospy.Publisher('/car_debug', Image, queue_size=5)
+
         self.bridge = CvBridge()
         # Contour area thresholds
         # Contour thresholds for different transitions
         self.first_area_threshold = 30000
         self.second_area_threshold = 30000
-        self.parked_car_area_threshold = 40000
+        self.parked_car_area_threshold = 1000
         # Flag to indicate if we already see the pink stripes
         self.seen_first_pink = False
         self.seen_second_pink = False
@@ -50,7 +52,7 @@ class road_transition():
                 # Find the largest contour based on the area
                 largest_contour = max(contours, key=cv2.contourArea)
                 area = cv2.contourArea(largest_contour)
-                print('Pink area is ' + str(area))
+                # print('Pink area is ' + str(area))
 
                 # First check if the robot sees the first pink stripe
                 if not self.seen_first_pink:
@@ -87,13 +89,17 @@ class road_transition():
                     binary_img = find_parked_car(img_cv2)
                     height, width = binary_img.shape[:2]
 
+                     # Debugging the input to model
+                    debug_img = self.bridge.cv2_to_imgmsg(binary_img, "mono8")
+                    self.pub_img_debug.publish(debug_img)
+                    
                     # Find the contours on the binary image
                     contours, _ = cv2.findContours(binary_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     if contours:
                         # Find the largest contour based on the area
                         largest_contour = max(contours, key=cv2.contourArea)
                         area = cv2.contourArea(largest_contour)
-                        print('Parked car area is ' + str(area))
+                        # print('Parked car area is ' + str(area))
 
                         if area > self.parked_car_area_threshold:
                             self.see_parked_car.publish('True')

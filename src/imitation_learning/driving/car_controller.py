@@ -94,7 +94,7 @@ class car_controller():
             # Convert Image datatype to numpy array
             bridge = CvBridge()
             img_cv2 = bridge.imgmsg_to_cv2(car_view_img, "bgr8")
-
+     
             # Process image so it is ready to be thrown into the CNN
             if not self.seen_first_pink:
                 mask_number = 0
@@ -120,7 +120,7 @@ class car_controller():
             # Drive! (But only if the model is ready)
             if self.road_model != None and self.grass_model != None and self.mountain_model != None:
                 if not self.seen_first_pink:
-                    print('Driving on road')
+                    # print('Driving on road')
                     self.road_drive(model_ready_img)
                     self.start_PID.publish('False')
                 elif self.seen_first_pink and not self.seen_second_pink:
@@ -131,10 +131,12 @@ class car_controller():
                     # print('Driving on Baby Yoda PID')
                     self.start_PID.publish('True')
                 elif self.seen_second_pink and self.seen_parked_car:
+                    # print("Mountain")
+                    self.start_PID.publish('Kill')
                     self.mountain_drive(model_ready_img)
 
                     # Stop the car so as not to move past the 2nd pink stripe
-                    self.pub_twist.publish(Twist())
+                    # self.pub_twist.publish(Twist())
 
             # Change last command time to cur_time
             self.last_cmd_time = self.cur_time
@@ -192,9 +194,8 @@ class car_controller():
     
     # Given the car's perspective through the camera, navigate the robot on mountain condition
     def mountain_drive(self, model_input):
-        
+        # print("1")
         # print(model_input.shape)
-
         # Get output from CNN, will be a 1D np vector
         model_pred = self.mountain_model.predict(model_input)
         

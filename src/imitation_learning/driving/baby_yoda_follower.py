@@ -26,6 +26,7 @@ class baby_yoda_follower:
         self.bridge = CvBridge()
         self.ready_2_start = False
         self.done_start = False
+        self.has_seen_pink = False
 
         # Flags for when we can start PID
         self.pid_is_ready = False
@@ -63,6 +64,9 @@ class baby_yoda_follower:
     def start_PID_callback(self, msg):
         if msg.data == 'True':
             self.start_PID_flag = True
+        if msg.data == 'Kill':
+            self.start_PID_flag = False
+            rospy.signal_shutdown("Finished PID")
 
     def camera_callback(self,data):
         if self.start_PID_flag:
@@ -70,21 +74,13 @@ class baby_yoda_follower:
                 
                 cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
                 frame_height, frame_width, channels  = cv_image.shape
-                # self.update_cur_time()
-                # if not self.pid_is_ready:
-                #     print("Waiting on yoda to get in position")
-                #     self.is_yoda_in_pos(cv_image)
-                # else: # If so, PID on it
-                #     print("PID on yoda")
-                #     self.yoda_pid(cv_image)
-                # return
-                # TODO uncomment once done with 90 degree turn cactus
+ 
                 if not self.ready_2_start and not self.done_start:
-                    print("Before Start")
+                    # print("Before Start")
                     self.start_sequence(cv_image, frame_width)
 
                 elif self.ready_2_start and not self.done_start:
-                    print("Ready to start")
+                    # print("Ready to start")
                     # Drive forward and over the pink strip
                     self.drive_toward_pink(cv_image, frame_height)
                     
@@ -93,10 +89,10 @@ class baby_yoda_follower:
                     self.update_cur_time()
                     # Is Yoda in position?
                     if not self.pid_is_ready:
-                        print("Waiting on yoda to get in position")
+                        # print("Waiting on yoda to get in position")
                         self.is_yoda_in_pos(cv_image)
                     else: # If so, PID on it
-                        print("PID on yoda")
+                        # print("PID on yoda")
                         self.yoda_pid(cv_image)
                 else:
                     print("something went wrong this is the else condition")
@@ -121,8 +117,18 @@ class baby_yoda_follower:
         contours = cv2.findContours(find_pink_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
         sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
+        # If for some reason we stop seeing the pink after straightening out
+        # We will not throw an exception and continue
+        if len(contours) == 0 and self.has_seen_pink:
+            # print("Skipping start sequence")
+            self.ready_2_start = True
+            return
+
         # The first one will be the strip
         pink_strip = sorted_contours[0]
+
+        # If we reached here, we have at least seen the pink strip
+        self.has_seen_pink = True
 
         # Compute how much we have to turn to straighten pink strip
         turning_value = self.straighten_pink_strip(find_pink_img, pink_strip, frame_width)
@@ -216,13 +222,13 @@ class baby_yoda_follower:
 
             # If yoda has previously been identified as static, check if it is movining to the left again
             if self.yoda_is_static_previously:
-                print("Waiting on yoda to move left")
+                # print("Waiting on yoda to move left")
                 # If the new x_position is less than previous by 10 pixels, it means moving to the left
                 if yoda_x - old_yoda_x < -10:
                     
-                    print("Yoda identified as moving left -------------------------")
-                    print(yoda_x)
-                    print(old_yoda_x)
+                    # print("Yoda identified as moving left -------------------------")
+                    # print(yoda_x)
+                    # print(old_yoda_x)
                     self.pid_is_ready = True
                     self.yoda_is_static_previously = False
                     return True
@@ -232,7 +238,7 @@ class baby_yoda_follower:
 
             # Turn on a flag that says we can wait until yoda is moving to start PID
             if is_static:
-                print("yoda is static")
+                # print("yoda is static")
                 self.yoda_is_static_previously = True
 
         # Debugging
@@ -390,7 +396,7 @@ class baby_yoda_follower:
         # as yoda gets closer  we want to move the desired line
         # back toward the 3/4 width mark
         if not self.dynamic_straight and self.dynamic_straight_counter < 20:
-            print("Start of Dynamic 150")
+            # print("Start of Dynamic 150")
             dynamic_adjustment = 150 * abs(cur_error)
             self.dynamic_straight_counter += 1
             
@@ -399,7 +405,7 @@ class baby_yoda_follower:
 
         elif self.dynamic_straight and self.dynamic_straight_counter >= 20:
             dynamic_adjustment = 500 * abs(cur_error)
-            print("Dynamic Adjustment: ", dynamic_adjustment)
+            # print("Dynamic Adjustment: ", dynamic_adjustment)
         
         else:
             print("SOMETHING WENT WRONG")
@@ -441,7 +447,7 @@ class baby_yoda_follower:
         if abs(cur_error) < 0.1:
             self.integral_sum = 0
 
-        print(self.integral_sum * self.ki_v)
+        # print(self.integral_sum * self.ki_v)
 
         final_error = cur_error - self.kd_v * d_error + self.ki_v * self.integral_sum
 

@@ -222,13 +222,13 @@ def find_yoda(img_cv2):
 def find_parked_car(img_cv2):
 
     # Experimentally determined optimal threshold for pink strip
-    upper_blue = 48
-    upper_green = 48
-    upper_red = 134
+    upper_blue = 83
+    upper_green = 61
+    upper_red = 45
 
-    lower_blue = 0
-    lower_green = 44
-    lower_red =  56
+    lower_blue = 67
+    lower_green = 52
+    lower_red =  43
 
     lower_thresh = np.array([lower_blue, lower_green, lower_red])
     upper_thresh = np.array([upper_blue, upper_green, upper_red])
