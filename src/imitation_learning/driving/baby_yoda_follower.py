@@ -29,6 +29,7 @@ class baby_yoda_follower:
 
         # Flags for when we can start PID
         self.pid_is_ready = False
+        self.yoda_is_static_previously = False
         self.yoda_last_position = None
         self.yoda_last_time = 0
         self.yoda_cur_time = 0
@@ -189,7 +190,7 @@ class baby_yoda_follower:
     # Once we are done advancing on the pink strip and are ready to PID onto yoda
     # We will wait until yoda is found and has been in the same position for half a second
     def is_yoda_in_pos(self, img_cv2):
-        
+
         # Get most up to date contour
         yoda_img, yoda_contour = find_yoda(img_cv2)
 
@@ -213,18 +214,32 @@ class baby_yoda_follower:
             self.yoda_last_position = yoda_contour
             self.yoda_last_time = self.yoda_cur_time
 
+            # If yoda has previously been identified as static, check if it is movining to the left again
+            if self.yoda_is_static_previously:
+                print("Waiting on yoda to move left")
+                # If the new x_position is less than previous by 10 pixels, it means moving to the left
+                if yoda_x - old_yoda_x < -10:
+                    
+                    print("Yoda identified as moving left -------------------------")
+                    print(yoda_x)
+                    print(old_yoda_x)
+                    self.pid_is_ready = True
+                    self.yoda_is_static_previously = False
+                    return True
+
             # Check if yoda has been in the same position
             is_static = abs(yoda_x - old_yoda_x) < self.yoda_position_threshold and abs(yoda_y - old_yoda_y) < self.yoda_position_threshold
 
-            # Start PID
+            # Turn on a flag that says we can wait until yoda is moving to start PID
             if is_static:
-                self.pid_is_ready = True
+                print("yoda is static")
+                self.yoda_is_static_previously = True
 
         # Debugging
         debug_img = self.bridge.cv2_to_imgmsg(yoda_img, "mono8")
         self.pub_debug.publish(debug_img)
 
-        return
+        return False
 
     def straighten_pink_strip(self, find_pink_img, pink_strip_contour, frame_width):
 

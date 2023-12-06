@@ -5,25 +5,25 @@ import cv2 as cv
 import time
 
 # Enter path to image you want to threshold on
-img = cv.imread('training/training_imgs/T_1701397417143_LX_0.0_AZ_0.0.jpeg',cv.IMREAD_COLOR)
+img = cv.imread('/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/training/training_imgs/mountain7.png',cv.IMREAD_COLOR)
 img = cv.medianBlur(img,5)
 
 # Convert BGR to HSV
 hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
-uh = 130
-us = 255
-uv = 255
-lh = 110
-ls = 50
-lv = 50
+uh = 37
+us = 96
+uv = 190
+lh = 18
+ls = 0
+lv = 137
 lower_hsv = np.array([lh,ls,lv])
 upper_hsv = np.array([uh,us,uv])
 
 # Threshold the HSV image to get only blue colors
 mask = cv.inRange(hsv, lower_hsv, upper_hsv)
 window_name = "HSV Calibrator"
-cv.namedWindow(window_name)
+cv.namedWindow(window_name, cv.WINDOW_NORMAL)
 
 def nothing(x):
     print("Trackbar value: " + str(x))

@@ -49,6 +49,7 @@ class car_controller():
         # CNN to drive car
         self.road_model = None
         self.grass_model = None
+        self.mountain_model = None
 
         # TODO change from real time to sim time 
 
@@ -108,11 +109,11 @@ class car_controller():
                     self.road_drive(model_ready_img)
                     self.start_PID.publish('False')
                 elif not self.seen_second_pink:
-                    print('Driving on grass')
+                    # print('Driving on grass')
                     self.grass_drive(model_ready_img)
                     self.start_PID.publish('False')
                 elif self.seen_second_pink:
-                    print('Driving on Baby Yoda PID')
+                    # print('Driving on Baby Yoda PID')
                     self.start_PID.publish('True')
 
                     # Stop the car so as not to move past the 2nd pink stripe
@@ -230,7 +231,7 @@ def main():
     # Startup sequence of controller
     road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/road_models/imit_model_3.1.h5"
     grass_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/grass_models/grass_model_2.0.h5"
-    # off_road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/off_road_models/off_road_model_1.0.h5"
+    off_road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/off_road_models/off_road_model_3.1.h5"
     controller.setup_controller(road_model_path, grass_model_path)
 
     try:
