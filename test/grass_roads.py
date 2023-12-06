@@ -7,8 +7,13 @@ from geometry_msgs.msg import Twist, Vector3
 from std_msgs.msg import String
 
 # Image processing
-from training.training_image_processing import process_grass_road
 from cv_bridge import CvBridge, CvBridgeError
+import sys
+
+# To import image_processing functions
+sys.path.insert(1, '/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/training')
+
+from training_image_processing import process_off_road
 
 # Class used to debug the thresholding for various parts of the off_roading and grass_road sections
 class grass_road():
@@ -24,7 +29,7 @@ class grass_road():
 
         bridge = CvBridge()
         image_to_process = bridge.imgmsg_to_cv2(car_view_img, "bgr8")
-        model_ready = process_grass_road(image_to_process)
+        model_ready = process_off_road(image_to_process)
         debug_img = bridge.cv2_to_imgmsg(model_ready, "mono8")
         self.pub_img_debug.publish(debug_img)
         

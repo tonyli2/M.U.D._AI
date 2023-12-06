@@ -41,9 +41,8 @@ def process_img(img_cv2, mask_number):
     elif mask_number == mask_grass:
         return process_grass_road(img_cv2)
     
-    # elif mask_number == mask_offroad:
-    #     return None
-    #     # return process_off_road(img_cv2)
+    elif mask_number == mask_offroad:
+        return process_off_road(img_cv2)
 
 
 # Processes the image so that the road is highlighted
@@ -142,6 +141,20 @@ def process_grass_road(img_cv2):
     return export_ready
 
 
+# # Processes the image so we can imitation learn on the mountain road
+def process_off_road(img_cv2):
+    
+    img_cv2 = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+
+    # Turn all pixels in the top half of the image to black
+    height, width = img_cv2.shape[:2]
+
+    top_third = int(height * (1/3))
+
+    img_cv2[:top_third,:] = 0
+    img_cv2 = cv2.resize(img_cv2, (256,144))
+
+    return img_cv2
 
 # Finds the pink strip in the image inputted
 def find_pink(img_cv2):
@@ -178,7 +191,7 @@ def find_yoda(img_cv2):
     upper_thresh = np.array([upper_blue, upper_green, upper_red])
 
     yoda_img = cv2.inRange(img_cv2, lower_thresh, upper_thresh)
-    yoda_img = cv2.dilate(yoda_img, None, iterations=1)
+    yoda_img = cv2.dilate(yoda_img, None, iterations=2)
 
     height, width = yoda_img.shape[:2]
 
@@ -189,12 +202,13 @@ def find_yoda(img_cv2):
     export_ready = np.zeros((height, width, 3), np.uint8)
 
     if len(sorted_contours) == 0:
+        print("No Contours")
         return export_ready, None
     else:
         yoda_contour = sorted_contours[0]
-
+    print(cv2.contourArea(yoda_contour))
     # If the largest contour is not yoda it will not have a large area
-    if cv2.contourArea(yoda_contour) > 1500: # Then this is baby yoda
+    if cv2.contourArea(yoda_contour) > 1000: # Then this is baby yoda
         cv2.drawContours(export_ready, [yoda_contour], -1, (255,255,255), -1)
 
     else: # Return no contour if its not baby yoda
