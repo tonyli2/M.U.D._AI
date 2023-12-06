@@ -43,6 +43,12 @@ class car_controller():
         # Publish to start PID command
         self.start_PID = rospy.Publisher('/start_PID', String, queue_size=5)
 
+        # Subscribe to the pedestrian signal command topic
+        self.pedestrian_signal_cmd = rospy.Subscriber('/pedestrian_signal_cmd', String, self.pedestrian_callback)
+
+        # Flag indicating if we are waiting for pedestrian to cross the road
+        self.wait4pedestrian = False
+
         # Publishers for debugging model predicted commands
         self.pub_twist_debug = rospy.Publisher('/twist_debug', String, queue_size=5)
         self.pub_img_debug = rospy.Publisher('/img_debug', Image, queue_size=5)
@@ -93,6 +99,15 @@ class car_controller():
 
         # Update time
         self.update_cur_time()
+
+        # Subscribe to a topic
+        # Topic returns a boolean (Stirng)
+        # If topic returns true the stop otherwise drive
+        if self.wait4pedestrian == True:
+            # Publish the stop command to find wait for pedestrian crossing road
+            twist_command = self.moves_dictionary[4]
+            self.pub_twist.publish(twist_command)
+            return
 
         # Only input commands once ever 100 ms
         if self.cur_time - self.last_cmd_time > self.input_period:
@@ -146,6 +161,16 @@ class car_controller():
 
             # Change last command time to cur_time
             self.last_cmd_time = self.cur_time
+
+     # Set the pedestrian flag to indicate if robot should wait or go
+    def pedestrian_callback(self, msg):
+        print("Pedestrian callback received:", msg.data)  # Debugging print statement
+        if msg.data == 'True':
+            self.wait4pedestrian = True
+            # print("Waiting for pedestrian...")  # More debugging
+        else:
+            self.wait4pedestrian = False
+            # print("No pedestrian, continuing...")  # More debugging
 
     # Update time
     def update_cur_time(self):
