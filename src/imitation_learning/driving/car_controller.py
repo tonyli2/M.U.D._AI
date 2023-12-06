@@ -284,7 +284,7 @@ def main():
     controller = car_controller()
 
     # Startup sequence of controller
-    road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/road_models/imit_model_3.1.h5"
+    road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/road_models/imit_model_5.1.h5"
     grass_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/grass_models/grass_model_2.0.h5"
     off_road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/off_road_models/off_road_model_3.1.h5"
     controller.setup_controller(road_model_path, grass_model_path, off_road_model_path)
