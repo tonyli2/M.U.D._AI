@@ -98,8 +98,15 @@ class car_controller():
             # Process image so it is ready to be thrown into the CNN
             if not self.seen_first_pink:
                 mask_number = 0
-            else:
+            elif self.seen_first_pink and not self.seen_second_pink:
                 mask_number = 1
+            elif self.seen_second_pink and not self.seen_parked_car:
+                mask_number = 2
+            elif self.seen_second_pink and self.seen_parked_car:
+                mask_number = 2
+            # This is our last resort to prevent mask_number being None and passed into process_img
+            else:
+                mask_number = 2
             # mask_number = 1
             model_ready_img = process_img(img_cv2, mask_number)
 
@@ -111,18 +118,20 @@ class car_controller():
             model_ready_img = model_ready_img.reshape((1, 144, 256, 1))
 
             # Drive! (But only if the model is ready)
-            if self.road_model != None and self.grass_model != None:
+            if self.road_model != None and self.grass_model != None and self.mountain_model != None:
                 if not self.seen_first_pink:
                     print('Driving on road')
                     self.road_drive(model_ready_img)
                     self.start_PID.publish('False')
-                elif not self.seen_second_pink:
+                elif self.seen_first_pink and not self.seen_second_pink:
                     # print('Driving on grass')
                     self.grass_drive(model_ready_img)
                     self.start_PID.publish('False')
-                elif self.seen_second_pink:
+                elif self.seen_second_pink and not self.seen_parked_car:
                     # print('Driving on Baby Yoda PID')
                     self.start_PID.publish('True')
+                elif self.seen_second_pink and self.seen_parked_car:
+                    self.mountain_drive(model_ready_img)
 
                     # Stop the car so as not to move past the 2nd pink stripe
                     self.pub_twist.publish(Twist())
@@ -180,16 +189,40 @@ class car_controller():
 
         # Publish to robot
         self.pub_twist.publish(twist_command)
+    
+    # Given the car's perspective through the camera, navigate the robot on mountain condition
+    def mountain_drive(self, model_input):
+        
+        # print(model_input.shape)
+
+        # Get output from CNN, will be a 1D np vector
+        model_pred = self.mountain_model.predict(model_input)
+        
+        # Find predicted move by taking max value in output vector
+        pred_idx = np.argmax(model_pred)
+
+        # # Look at how confident model is for this max
+        max_confidence = model_pred[0][pred_idx]
+
+        if max_confidence < 0.8:
+            return
+
+        # Go to lookup table to convert from index to Twist Msg
+        twist_command = self.moves_dictionary[pred_idx]
+
+        # Publish to robot
+        self.pub_twist.publish(twist_command)
 
 
     # Called at start to populate class variables
-    def setup_controller(self, road_model_path, grass_model_path):
+    def setup_controller(self, road_model_path, grass_model_path, mountain_model_path):
 
         # Load the desired version of the CNN
         self.road_model = tf.keras.models.load_model(road_model_path)
         self.grass_model = tf.keras.models.load_model(grass_model_path)
+        self.mountain_model = tf.keras.models.load_model(mountain_model_path)
 
-        while self.road_model == None or self.grass_model == None:
+        while self.road_model == None or self.grass_model == None or self.mountain_model == None:
             print("Waiting for model to load . . .")
             continue
         
@@ -240,7 +273,7 @@ def main():
     road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/road_models/imit_model_3.1.h5"
     grass_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/grass_models/grass_model_2.0.h5"
     off_road_model_path = "/home/fizzer/ros_ws/src/controller_repo/src/imitation_learning/cnn_models/off_road_models/off_road_model_3.1.h5"
-    controller.setup_controller(road_model_path, grass_model_path)
+    controller.setup_controller(road_model_path, grass_model_path, off_road_model_path)
 
     try:
         rospy.spin()
