@@ -30,6 +30,9 @@ class car_controller():
         # Subscribe camera topic
         self.sub_cam = rospy.Subscriber('/R1/pi_camera/image_raw', Image, self.camera_callback)
 
+        # Score tracker
+        self.score_tracker = rospy.Publisher('/score_tracker', String, queue_size=5)
+
         # Subscribe to the pink flag topic
         self.first_pink_flag = rospy.Subscriber('/first_pink_detector', String, self.first_pink_callback)
         self.second_pink_flag = rospy.Subscriber('/second_pink_detector', String, self.second_pink_callback)
@@ -63,6 +66,9 @@ class car_controller():
         self.seen_first_pink = False
         self.seen_second_pink = False
         self.seen_parked_car = False
+
+        # Start Competition timer
+        self.start_timer = True
     
     # Change the state of the first pink flag
     def first_pink_callback(self, msg):
@@ -227,6 +233,13 @@ class car_controller():
             print("Waiting for model to load . . .")
             continue
         
+        # Start the competition timer
+        if self.start_timer == True:
+
+            self.start_timer = False
+            start_timer = "03,IAmHuntersDad,0, NA"
+            self.score_tracker.publish(start_timer)
+
         # Setup the dictionary that maps CNN outputs to real Twist Msgs
         self.moves_dictionary = self.model_output_to_Twist()
 
